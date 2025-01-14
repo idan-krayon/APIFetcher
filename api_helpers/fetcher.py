@@ -1,23 +1,26 @@
 import asyncio
 import os
-from typing import Dict, Any, List, Union
+from typing import Any, Dict, List, Union
 from urllib.parse import urlparse
 
 import aiohttp
 from async_lru import alru_cache
+from dotenv import load_dotenv
 from tenacity import retry, stop_after_attempt, wait_exponential
 
-stop_after = os.getenv("TENACITY_MIN_BACKOFF") or 5
-multiplier = os.getenv("TENACITY_MULTIPLIER") or 1
-min_backoff = os.getenv("TENACITY_MIN_BACKOFF") or 2
-max_backoff = os.getenv("TENACITY_MAX_BACKOFF") or 10
+load_dotenv()
+
+stop_after = int(os.getenv("TENACITY_MIN_BACKOFF", 5))
+multiplier = int(os.getenv("TENACITY_MULTIPLIER", 1))
+min_backoff = int(os.getenv("TENACITY_MIN_BACKOFF", 2))
+max_backoff = int(os.getenv("TENACITY_MAX_BACKOFF", 10))
 
 
 def is_data_url(url: str) -> bool:
     """
     Check if a URL is a data-fetchable URL (not static like .jpeg, .png, etc.).
     """
-    excluded_extensions = {".jpeg", ".jpg", ".png", ".gif", ".svg", ".webp"}
+    excluded_extensions = {".jpeg", ".jpg", ".png", ".gif", ".svg", ".webp", ".ogg"}
     path = urlparse(url).path
     return not any(path.endswith(ext) for ext in excluded_extensions)
 
@@ -26,6 +29,7 @@ class Fetcher:
     """
     Fetcher class for making safe requests.
     """
+
     def __init__(self, rate_limit: int = 20):
         """
         Initialize the Fetcher with a rate limit.
@@ -33,9 +37,11 @@ class Fetcher:
         """
         self.semaphore = asyncio.Semaphore(rate_limit)
 
-    @retry(stop=stop_after_attempt(stop_after),
-           wait=wait_exponential(multiplier=multiplier, min=min_backoff, max=max_backoff))
-    @alru_cache(maxsize=1024)
+    @retry(
+        stop=stop_after_attempt(stop_after),
+        wait=wait_exponential(multiplier=multiplier, min=min_backoff, max=max_backoff),
+    )
+    @alru_cache(maxsize=65536)
     async def safe_fetch_single(self, url: str) -> Dict[str, Any]:
         """
         Safely fetch data from a single URL with Memcached caching.
@@ -53,9 +59,11 @@ class Fetcher:
                         response.raise_for_status()
                         return await response.json()
                 except aiohttp.ClientError as e:
-                    raise RuntimeError(f"Request failed for {url}: {str(e)}")
+                    print(f"Request failed for {url}: {str(e)}")
+                    return {}
                 except Exception as e:
-                    raise RuntimeError(f"Unexpected error for {url}: {str(e)}")
+                    print(f"Unexpected error for {url}: {str(e)}")
+                    return {}
 
     async def safe_fetch_many(self, urls: List[str]) -> List[Dict[str, Any]]:
         """
@@ -66,12 +74,14 @@ class Fetcher:
 
 
 class GraphFetcher(Fetcher):
-    def __init__(self, rate_limit: int = 20):
+    def __init__(self, rate_limit: int = 20, enable_recursive_fetch: bool = False):
         """
         Initialize the GraphFetcher.
         """
-        self.visited_urls = set()
-        self.details_dict = {}
+        self.visited_urls: set[str] = set()
+        self.details_dict: Dict[str, Any] = {}
+        # Control recursive fetching, TOO much data can be fetched
+        self.enable_recursive_fetch = enable_recursive_fetch
         super().__init__(rate_limit)
 
     async def traverse_and_fetch(
@@ -86,18 +96,28 @@ class GraphFetcher(Fetcher):
         if not node:
             return
 
-        if isinstance(node, str) and node.startswith("http") and node not in self.visited_urls:
+        if (
+            isinstance(node, str)
+            and node.startswith("http")
+            and node not in self.visited_urls
+        ):
             if not is_data_url(node):
                 return
 
             try:
                 self.visited_urls.add(node)
-                self.details_dict[node] = await self.safe_fetch_single(node)
+                fetched_data = await self.safe_fetch_single(node)
+                self.details_dict[node] = fetched_data
+                if self.enable_recursive_fetch:
+                    await self.traverse_and_fetch(fetched_data, base_field=node)
+
             except Exception as e:
-                self.details_dict[node] = {"error": str(e)}
+                print(f"Error fetching data for {node}: {str(e)}")
 
         elif isinstance(node, list):
-            await asyncio.gather(*(self.traverse_and_fetch(item, base_field) for item in node))
+            await asyncio.gather(
+                *(self.traverse_and_fetch(item, base_field) for item in node)
+            )
 
         elif isinstance(node, dict):
             for key, value in node.items():

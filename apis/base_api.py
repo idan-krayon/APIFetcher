@@ -1,7 +1,6 @@
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
 import pydash
-from fastapi import HTTPException
 
 from api_helpers.fetcher import GraphFetcher
 
@@ -17,8 +16,6 @@ class CharacterAPI:
         """
         self.fetcher = GraphFetcher(rate_limit)
 
-        #self.fetcher = Fetcher(rate_limit)
-
     async def fetch_data(self) -> List[Dict[str, Any]]:
         """
         Fetch character data from the API.
@@ -26,7 +23,7 @@ class CharacterAPI:
         """
         raise NotImplementedError("fetch_data must be implemented by subclasses")
 
-    async def normalize_data(self, raw_data: List[Dict[str, Any]]) -> list["Character"]:
+    async def normalize_data(self, raw_data: List[Dict[str, Any]]) -> list[Any]:
         """
         Normalize the raw data from the API.
         :param raw_data: Raw character data.
@@ -34,8 +31,9 @@ class CharacterAPI:
         """
         raise NotImplementedError("normalize_data must be implemented by subclasses")
 
-    async def fetch_paginated_data(self, url: str, data_key: str = "results", next_key: str = "next") -> List[
-        Dict[str, Any]]:
+    async def fetch_paginated_data(
+        self, url: str, data_key: str = "results", next_key: str = "next"
+    ) -> List[Dict[str, Any]]:
         """
         Fetch paginated data from an API.
         """
@@ -46,7 +44,8 @@ class CharacterAPI:
             response = await self.fetcher.safe_fetch_single(next_url)
 
             if not response:
-                raise HTTPException(status_code=500, detail=f"No response received for URL: {next_url}")
+                print(f"No response received for URL: {next_url}")
+                break
 
             data.extend(pydash.get(response, data_key, []))
             next_url = pydash.get(response, next_key, None)

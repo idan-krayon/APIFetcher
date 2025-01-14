@@ -7,6 +7,7 @@ class BaseStorageManager:
     """
     Base class for storage managers.
     """
+
     async def save(self, data: List[Character], *args, **kwargs) -> None:
         """
         Save data to a storage system.

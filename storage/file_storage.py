@@ -9,7 +9,10 @@ class FileStorageManager(BaseStorageManager):
     """
     File storage manager for saving character data to a file.
     """
-    async def save(self, data: List[Character], *args, file_name: str = "characters.json", **kwargs) -> None:
+
+    async def save(
+        self, data: List[Character], *args, file_name: str = "characters.json", **kwargs
+    ) -> None:
         """
         Save the data to a file.
         :param data: List of Character objects to save.

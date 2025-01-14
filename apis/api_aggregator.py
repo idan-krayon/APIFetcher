@@ -1,5 +1,5 @@
 import asyncio
-from typing import List, Dict
+from typing import Dict, List
 
 from apis.base_api import CharacterAPI
 from models.character import Character
@@ -22,7 +22,7 @@ class APIAggregator:
         Aggregate characters from multiple APIs.
         :return: List of normalized and merged characters.
         """
-        all_characters = {}
+        all_characters: dict = {}
         tasks = [api.fetch_data() for api in self.apis]
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
@@ -35,7 +35,9 @@ class APIAggregator:
 
         return sorted(all_characters.values(), key=lambda x: x.name.lower())
 
-    def _merge_characters(self, character_map: Dict[str, Character], new_characters: List[Character]) -> None:
+    def _merge_characters(
+        self, character_map: Dict[str, Character], new_characters: List[Character]
+    ) -> None:
         """
         Merge a list of new characters into an existing character map.
         :param character_map: Existing map of characters, keyed by name.
@@ -44,9 +46,12 @@ class APIAggregator:
         for new_char in new_characters:
             if new_char.name in character_map:
                 existing_char = character_map[new_char.name]
-                existing_char.species = self._merge_lists(existing_char.species.split(", "), new_char.species.split(
-                    ", "))  # just an example for one of the fields e.g; species
-                existing_char.additional_attributes.update(new_char.additional_attributes)
+                existing_char.species = self._merge_lists(
+                    existing_char.species.split(", "), new_char.species.split(", ")
+                )  # just an example for one of the fields e.g; species
+                existing_char.additional_attributes.update(
+                    new_char.additional_attributes
+                )
             else:
                 character_map[new_char.name] = new_char
 

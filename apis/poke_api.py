@@ -1,5 +1,5 @@
 import os
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
 import pydash
 from dotenv import load_dotenv
@@ -9,15 +9,19 @@ from models.character import Character, OriginEnum
 
 load_dotenv()
 
+
 class PokeAPI(CharacterAPI):
     """
     Service class for the Pokémon API
     """
+
     def __init__(self):
         """
         Initialize the Pokémon API service.
         """
-        self.API_URL = os.getenv("POKE_API") or "https://pokeapi.co/api/v2/pokemon?limit=1000"
+        self.API_URL = os.getenv(
+            "POKE_API", "https://pokeapi.co/api/v2/pokemon?limit=1000"
+        )
         super().__init__(rate_limit=100)
 
     async def fetch_data(self) -> List[Dict[str, Any]]:
@@ -47,12 +51,14 @@ class PokeAPI(CharacterAPI):
             types = pydash.get(spec_details, "types", [])
             types = [pydash.get(t, "type.name", "Unknown") for t in types]
 
-            characters.append(Character(
-                name=name,
-                origin=OriginEnum.POKEMON,
-                species=", ".join(types),
-                additional_attributes={
-                    "base_experience": item.get("base_experience", 0),
-                }
-            ))
+            characters.append(
+                Character(
+                    name=name,
+                    origin=OriginEnum.POKEMON,
+                    species=", ".join(types),
+                    additional_attributes={
+                        "base_experience": item.get("base_experience", 0),
+                    },
+                )
+            )
         return characters
