@@ -52,6 +52,7 @@ uvicorn main:app --reload
 ```
 
 The server will start at http://127.0.0.1:8000
+
 You can access the API under http://127.0.0.1:8000/characters
 
 After calling the API, the data will be stored in the file `characters.json` in the root directory.
