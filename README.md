@@ -2,6 +2,8 @@
  
 Fetch Data from the following APIs and normalize the data and store it in a file.
 
+---
+
 ## Features
 - Fetch data from the APIs and normalize the data.
 - Store the normalized data in a file.
@@ -44,25 +46,27 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-
 ### 4. Run the server
 ```bash
 uvicorn main:app --reload
 ```
 
 The server will start at http://127.0.0.1:8000
+You can access the API under http://127.0.0.1:8000/characters
+
+After calling the API, the data will be stored in the file `characters.json` in the root directory.
+![img.png](img.png)
 
 ### 5. Run the tests
 ```bash
-pytest
-pytest -v # For verbose output
+python -m unittest tests/test_some.py 
+python -m unittest tests/test_some.py -v # For verbose output
 ```
 
 ### 6. Integration Tests under tests/test_integration.py
 ```bash
-python client_tests.py
+python -m unittest tests/test_integration.py 
 ```
-
 
 ### 7. Code Quality Checks
 Used flake8, isort, black and mypy for code quality checks.
@@ -78,3 +82,4 @@ isort . && black . && flake8 . && mypy .
 - We are using lrucache to store the data in memory for faster access. In production, we can use a proper database like redis and store much more data/records.
 - In order to fetch all data we are recursively fetching data from the APIs, other ways can be used like using a queue.
 - Had to add a flag to the recursive function to avoid fetching too much data e.g; the Poke`mon API.
+---

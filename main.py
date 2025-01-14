@@ -4,7 +4,9 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 
 from apis.api_aggregator import APIAggregator
+from apis.poke_api import PokeAPI
 from apis.rick_and_morty_api import RickAndMortyAPI
+from apis.swapi_api import SWAPI
 from storage.file_storage import FileStorageManager
 
 load_dotenv()
@@ -26,8 +28,8 @@ async def get_characters():
     :return: List of characters.
     """
     file_name = os.getenv("FILE_NAME") or "characters.json"
-    apis = [RickAndMortyAPI()]  # Play with it
-    # apis = [PokeAPI(), SWAPI(), RickAndMortyAPI()]
+    #apis = [RickAndMortyAPI()]  # Play with it
+    apis = [PokeAPI(), SWAPI(), RickAndMortyAPI()]
     aggregator = APIAggregator(apis)
     characters = await aggregator.aggregate_characters()
 
