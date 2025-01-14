@@ -1,0 +1,8 @@
+ __pycache__/
+api_helpers/__pycache__/
+apis/__pycache__/
+characters.json
+models/__pycache__/
+storage/__pycache__/
+.venv/
+.env
