@@ -1,4 +1,4 @@
- __pycache__/
+__pycache__/
 api_helpers/__pycache__/
 apis/__pycache__/
 characters.json
